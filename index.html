@@ -3,50 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz App</title>
+    <title>Quiz Web</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        #quiz-container {
+            margin: auto;
+            width: 60%;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        button {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #timer {
+            font-size: 18px;
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Quiz en ligne</h1>
+    <h1>Quiz Web</h1>
     <div id="quiz-container">
-        <p id="question">Cliquez sur le bouton pour commencer le quiz.</p>
+        <h2 id="question">Cliquez pour démarrer le quiz</h2>
         <div id="options"></div>
-        <button onclick="getQuestion()">Commencer le Quiz</button>
+        <div id="timer"></div>
+        <button onclick="startQuiz()">Démarrer le Quiz</button>
     </div>
     <p id="result"></p>
 
     <script>
-        async function getQuestion() {
-            const response = await fetch('/get_question');
+        let currentQuestionIndex = 0;
+        let quizData = [];
+        let score = 0;
+        let timer;
+
+        async function startQuiz() {
+            const response = await fetch('/start_quiz');
             const data = await response.json();
-            if (data.error) {
-                document.getElementById('question').innerText = "Erreur : " + data.error;
+            quizData = data.quiz;
+
+            if (quizData.length > 0) {
+                currentQuestionIndex = 0;
+                score = 0;
+                displayQuestion();
             } else {
-                document.getElementById('question').innerText = data.question;
-                const optionsDiv = document.getElementById('options');
-                optionsDiv.innerHTML = ""; // Efface les précédentes réponses
-                data.propositions.forEach(option => {
-                    if (option) {
-                        const button = document.createElement('button');
-                        button.innerText = option;
-                        button.onclick = () => checkAnswer(data.id, option);
-                        optionsDiv.appendChild(button);
-                    }
-                });
+                alert("Aucune question disponible.");
             }
         }
 
-        async function checkAnswer(questionId, userAnswer) {
+        function displayQuestion() {
+            clearTimeout(timer); // Réinitialiser le timer
+            const questionData = quizData[currentQuestionIndex];
+
+            // Afficher la question
+            document.getElementById('question').innerText = questionData.question;
+
+            // Afficher les options
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = "";
+            questionData.propositions.forEach(option => {
+                if (option) {
+                    const button = document.createElement('button');
+                    button.innerText = option;
+                    button.onclick = () => checkAnswer(questionData.id, option, questionData.points);
+                    optionsDiv.appendChild(button);
+                }
+            });
+
+            // Ajouter un compte à rebours
+            let timeLeft = 15;
+            const timerDiv = document.getElementById('timer');
+            timerDiv.innerText = `Temps restant : ${timeLeft}s`;
+            timer = setInterval(() => {
+                timeLeft--;
+                timerDiv.innerText = `Temps restant : ${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+
+        async function checkAnswer(questionId, userAnswer, points) {
+            clearInterval(timer); // Arrêter le timer
+
             const response = await fetch('/check_answer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: questionId, answer: userAnswer })
             });
             const result = await response.json();
-            const resultDiv = document.getElementById('result');
+
             if (result.result === "correct") {
-                resultDiv.innerText = "Bonne réponse ! 🎉";
+                score += points;
+                alert("Bonne réponse ! 🎉");
             } else {
-                resultDiv.innerText = `Mauvaise réponse. La bonne réponse était : ${result.correct_answer}`;
+                alert(`Mauvaise réponse. La bonne réponse était : ${result.correct_answer}`);
+            }
+
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                displayQuestion();
+            } else {
+                // Affichage du score final
+                document.getElementById('quiz-container').innerHTML = `
+                    <h2>Quiz terminé !</h2>
+                    <p>Votre score final est : ${score}</p>
+                    <button onclick="startQuiz()">Recommencer</button>
+                `;
             }
         }
     </script>
