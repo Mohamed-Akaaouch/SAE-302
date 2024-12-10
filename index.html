@@ -1,12 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Quiz App</title>
 </head>
 <body>
-    <h1>Mon Titre</h1>
-    
+    <h1>Quiz en ligne</h1>
+    <div id="quiz-container">
+        <p id="question">Cliquez sur le bouton pour commencer le quiz.</p>
+        <div id="options"></div>
+        <button onclick="getQuestion()">Commencer le Quiz</button>
+    </div>
+    <p id="result"></p>
+
+    <script>
+        async function getQuestion() {
+            const response = await fetch('/get_question');
+            const data = await response.json();
+            if (data.error) {
+                document.getElementById('question').innerText = "Erreur : " + data.error;
+            } else {
+                document.getElementById('question').innerText = data.question;
+                const optionsDiv = document.getElementById('options');
+                optionsDiv.innerHTML = ""; // Efface les précédentes réponses
+                data.propositions.forEach(option => {
+                    if (option) {
+                        const button = document.createElement('button');
+                        button.innerText = option;
+                        button.onclick = () => checkAnswer(data.id, option);
+                        optionsDiv.appendChild(button);
+                    }
+                });
+            }
+        }
+
+        async function checkAnswer(questionId, userAnswer) {
+            const response = await fetch('/check_answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: questionId, answer: userAnswer })
+            });
+            const result = await response.json();
+            const resultDiv = document.getElementById('result');
+            if (result.result === "correct") {
+                resultDiv.innerText = "Bonne réponse ! 🎉";
+            } else {
+                resultDiv.innerText = `Mauvaise réponse. La bonne réponse était : ${result.correct_answer}`;
+            }
+        }
+    </script>
 </body>
 </html>
