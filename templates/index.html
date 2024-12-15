@@ -4,53 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz Web</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            text-align: center;
-            background-color: #f9f9f9;
-        }
-        #quiz-container {
-            margin: auto;
-            width: 60%;
-            background: #fff;
-            border: 1px solid #ccc;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-        }
-        button {
-            display: inline-block;
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            background-color: #4CAF50;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #timer {
-            font-size: 18px;
-            color: red;
-            margin-top: 10px;
-        }
-    </style>
+    <!-- Lien vers le fichier CSS externe -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>Quiz Web</h1>
-    <div id="quiz-container">
-        <h2 id="question">Cliquez pour démarrer le quiz</h2>
-        <div id="options"></div>
-        <div id="timer"></div>
-        <button onclick="startQuiz()">Démarrer le Quiz</button>
+    <div class="container">
+        <h1>Quiz Web</h1>
+        <div id="quiz-container">
+            <h2 id="question">Cliquez pour démarrer le quiz</h2>
+            <div id="options"></div>
+            <div id="timer"></div>
+            <button class="start-btn" onclick="startQuiz()">Démarrer le Quiz</button>
+        </div>
+        <p id="result"></p>
     </div>
-    <p id="result"></p>
-
     <script>
         let currentQuestionIndex = 0;
         let quizData = [];
@@ -72,25 +39,23 @@
         }
 
         function displayQuestion() {
-            clearTimeout(timer); // Réinitialiser le timer
+            clearTimeout(timer); 
             const questionData = quizData[currentQuestionIndex];
 
-            // Afficher la question
             document.getElementById('question').innerText = questionData.question;
 
-            // Afficher les options
             const optionsDiv = document.getElementById('options');
             optionsDiv.innerHTML = "";
             questionData.propositions.forEach(option => {
                 if (option) {
                     const button = document.createElement('button');
                     button.innerText = option;
+                    button.className = "option-btn";
                     button.onclick = () => checkAnswer(questionData.id, option, questionData.points);
                     optionsDiv.appendChild(button);
                 }
             });
 
-            // Ajouter un compte à rebours
             let timeLeft = 15;
             const timerDiv = document.getElementById('timer');
             timerDiv.innerText = `Temps restant : ${timeLeft}s`;
@@ -105,7 +70,7 @@
         }
 
         async function checkAnswer(questionId, userAnswer, points) {
-            clearInterval(timer); // Arrêter le timer
+            clearInterval(timer);
 
             const response = await fetch('/check_answer', {
                 method: 'POST',
@@ -129,11 +94,10 @@
             if (currentQuestionIndex < quizData.length) {
                 displayQuestion();
             } else {
-                // Affichage du score final
                 document.getElementById('quiz-container').innerHTML = `
                     <h2>Quiz terminé !</h2>
                     <p>Votre score final est : ${score}</p>
-                    <button onclick="startQuiz()">Recommencer</button>
+                    <button class="start-btn" onclick="startQuiz()">Recommencer</button>
                 `;
             }
         }

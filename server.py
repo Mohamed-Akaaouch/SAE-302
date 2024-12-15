@@ -1,22 +1,21 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import sqlite3
-import random
 
 app = Flask(__name__)
 
-# Fonction pour récupérer plusieurs questions aléatoires
-def get_random_questions(limit=5):
-    conn = sqlite3.connect("quiz_game.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, question, proposition1, proposition2, proposition3, proposition4, reponse_correcte, points FROM Questions ORDER BY RANDOM() LIMIT ?", (limit,))
-    questions = cursor.fetchall()
-    conn.close()
-    return questions
+# Route pour la page d'accueil
+@app.route('/')
+def home():
+    return render_template('index.html')
 
 # Route pour récupérer une session de quiz (5 questions)
 @app.route('/start_quiz', methods=['GET'])
 def start_quiz():
-    questions = get_random_questions()
+    conn = sqlite3.connect("quiz_game.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, question, proposition1, proposition2, proposition3, proposition4, reponse_correcte, points FROM Questions ORDER BY RANDOM() LIMIT 5")
+    questions = cursor.fetchall()
+    conn.close()
     quiz_data = []
     for question in questions:
         quiz_data.append({
@@ -34,7 +33,6 @@ def check_answer():
     question_id = data.get("id")
     user_answer = data.get("answer")
 
-    # Vérification dans la base de données
     conn = sqlite3.connect("quiz_game.db")
     cursor = conn.cursor()
     cursor.execute("SELECT reponse_correcte FROM Questions WHERE id=?", (question_id,))
@@ -47,4 +45,4 @@ def check_answer():
         return jsonify({"result": "incorrect", "correct_answer": correct_answer[0]})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
