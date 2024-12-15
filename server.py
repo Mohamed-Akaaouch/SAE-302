@@ -12,20 +12,30 @@ def home():
 # Route pour récupérer une session de quiz (5 questions)
 @app.route('/start_quiz', methods=['GET'])
 def start_quiz():
+    theme = request.args.get('theme', 'Sciences')  # Choix par défaut
     conn = sqlite3.connect("quiz_game.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT id, question, proposition1, proposition2, proposition3, proposition4, reponse_correcte, points FROM Questions ORDER BY RANDOM() LIMIT 5")
+    cursor.execute("""
+        SELECT id, question, proposition1, proposition2, proposition3, proposition4, reponse_correcte, points 
+        FROM Questions 
+        WHERE theme=? 
+        ORDER BY RANDOM() 
+        LIMIT 5
+    """, (theme,))
     questions = cursor.fetchall()
     conn.close()
-    quiz_data = []
-    for question in questions:
-        quiz_data.append({
-            "id": question[0],
-            "question": question[1],
-            "propositions": [question[2], question[3], question[4], question[5]],
-            "points": question[7]
-        })
+    # Formater les questions comme avant
+    quiz_data = [
+        {
+            "id": q[0],
+            "question": q[1],
+            "propositions": [q[2], q[3], q[4], q[5]],
+            "points": q[7]
+        }
+        for q in questions
+    ]
     return jsonify({"quiz": quiz_data})
+
 
 # Route pour vérifier une réponse
 @app.route('/check_answer', methods=['POST'])
