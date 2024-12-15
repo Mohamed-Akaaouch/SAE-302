@@ -65,5 +65,15 @@ def save_score():
 
     return jsonify({"message": "Score enregistré avec succès"})
 
+@app.route('/get_scores', methods=['GET'])
+def get_scores():
+    conn = sqlite3.connect("quiz_game.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT nom_joueur, theme, score, date FROM Scores ORDER BY score DESC, date ASC")
+    scores = cursor.fetchall()
+    conn.close()
+    return jsonify({"scores": scores})
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
