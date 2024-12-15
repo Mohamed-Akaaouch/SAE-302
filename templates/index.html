@@ -7,20 +7,58 @@
     <!-- Lien vers le fichier CSS externe -->
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <!-- Bootstrap CSS -->
-<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <h1>Quiz Web</h1>
+        <h1 class="my-4 text-center text-info">Quiz Web</h1>
+        
+        <!-- Section Quiz -->
         <div id="quiz-container">
             <h2 id="question">Cliquez pour démarrer le quiz</h2>
             <div id="options"></div>
-            <div id="timer"></div>
-            <button class="start-btn" onclick="startQuiz()">Démarrer le Quiz</button>
+            <div id="timer" class="my-2"></div>
+            <button class="start-btn btn btn-primary" onclick="startQuiz()">Démarrer le Quiz</button>
         </div>
-        <p id="result"></p>
+
+        <!-- Section Résultats -->
+        <div id="result-section" style="display: none;">
+            <h2>Quiz terminé !</h2>
+            <p id="result">Votre score final est : 0</p>
+            <button class="btn btn-success restart-btn" onclick="restartQuiz()">Recommencer</button>
+        </div>
+        <!-- Choisir un quiz -->
+        <div id="theme-selection" class="mb-4 text-center">
+            <h3>Choisissez un thème</h3>
+            <select id="theme-select" class="form-control w-50 mx-auto">
+                <option value="Sciences">Sciences</option>
+                <option value="Art et Littérature">Art et Littérature</option>
+                <option value="Géographie">Géographie</option>
+                 <option value="Aléatoire">Quizz Aléatoire</option>
+            </select>
+            <button class="btn btn-primary mt-3" onclick="startQuiz()">Commencer le Quiz</button>
+        </div>
+
+        <!-- Tableau des scores -->
+        <div id="score-section" style="display: none;">
+            <h2 class="mb-4">Classement des Scores</h2>
+            <table id="score-table" class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Nom du Joueur</th>
+                        <th>Thème</th>
+                        <th>Score</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="score-body">
+                    <!-- Les scores seront remplis dynamiquement -->
+                </tbody>
+            </table>
+            <button class="btn btn-warning restart-btn" onclick="restartQuiz()">Recommencer</button>
+        </div>
     </div>
+
     <script>
         let currentQuestionIndex = 0;
         let quizData = [];
@@ -36,6 +74,9 @@
                 currentQuestionIndex = 0;
                 score = 0;
                 displayQuestion();
+                document.getElementById('result-section').style.display = 'none';
+                document.getElementById('score-section').style.display = 'none';
+                document.getElementById('quiz-container').style.display = 'block';
             } else {
                 alert("Aucune question disponible.");
             }
@@ -53,7 +94,7 @@
                 if (option) {
                     const button = document.createElement('button');
                     button.innerText = option;
-                    button.className = "option-btn";
+                    button.className = "option-btn btn btn-outline-success btn-block my-2";
                     button.onclick = () => checkAnswer(questionData.id, option, questionData.points);
                     optionsDiv.appendChild(button);
                 }
@@ -97,12 +138,55 @@
             if (currentQuestionIndex < quizData.length) {
                 displayQuestion();
             } else {
-                document.getElementById('quiz-container').innerHTML = `
-                    <h2>Quiz terminé !</h2>
-                    <p>Votre score final est : ${score}</p>
-                    <button class="start-btn" onclick="startQuiz()">Recommencer</button>
-                `;
+                document.getElementById('quiz-container').style.display = 'none';
+                document.getElementById('result').innerText = `Votre score final est : ${score}`;
+                document.getElementById('result-section').style.display = 'block';
+                saveScore();
             }
+        }
+
+        // Fonction pour enregistrer le score
+        async function saveScore() {
+            const nom_joueur = prompt("Entrez votre nom pour enregistrer le score :");
+            const theme = quizData[0].theme || "Général"; // Exemple de thème
+            const response = await fetch('/save_score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nom_joueur, theme, score })
+            });
+
+            if (response.ok) {
+                fetchScores();
+            }
+        }
+
+        // Fonction pour récupérer les scores et les afficher
+        async function fetchScores() {
+            const response = await fetch('/get_scores');
+            const data = await response.json();
+
+            const scoreBody = document.getElementById('score-body');
+            scoreBody.innerHTML = ''; // Réinitialiser le tableau
+
+            data.scores.forEach(score => {
+                const row = `
+                    <tr>
+                        <td>${score[0]}</td>
+                        <td>${score[1]}</td>
+                        <td>${score[2]}</td>
+                        <td>${score[3]}</td>
+                    </tr>
+                `;
+                scoreBody.innerHTML += row;
+            });
+
+            document.getElementById('score-section').style.display = 'block';
+        }
+
+        function restartQuiz() {
+            document.getElementById('score-section').style.display = 'none';
+            document.getElementById('result-section').style.display = 'none';
+            startQuiz();
         }
     </script>
 </body>
