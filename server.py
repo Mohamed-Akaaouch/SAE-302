@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, render_template
+from datetime import datetime
 import sqlite3
 
 app = Flask(__name__)
@@ -43,6 +44,26 @@ def check_answer():
         return jsonify({"result": "correct"})
     else:
         return jsonify({"result": "incorrect", "correct_answer": correct_answer[0]})
+
+@app.route('/save_score', methods=['POST'])
+def save_score():
+    data = request.get_json()
+    nom_joueur = data.get("nom_joueur")
+    theme = data.get("theme")
+    score = data.get("score")
+    date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Sauvegarde du score dans la base de données
+    conn = sqlite3.connect("quiz_game.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO Scores (nom_joueur, theme, score, date)
+        VALUES (?, ?, ?, ?)
+    """, (nom_joueur, theme, score, date))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": "Score enregistré avec succès"})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
