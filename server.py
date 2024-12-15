@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, render_template
 from datetime import datetime
 import sqlite3
+import random
 
 app = Flask(__name__)
 
@@ -9,31 +10,35 @@ app = Flask(__name__)
 def home():
     return render_template('index.html')
 
-# Route pour récupérer une session de quiz (5 questions)
+# Route pour récupérer une session de quiz (questions selon le thème choisi)
 @app.route('/start_quiz', methods=['GET'])
 def start_quiz():
-    theme = request.args.get('theme', 'Sciences')  # Choix par défaut
+    theme = request.args.get('theme', 'Sciences')  # Thème par défaut
+    if theme == "Aléatoire":
+        theme = random.choice(["Sciences", "Art et Littérature", "Géographie"])  # Choix aléatoire d'un thème
+    
     conn = sqlite3.connect("quiz_game.db")
     cursor = conn.cursor()
+    
+    # Récupérer les questions en fonction du thème et du score
     cursor.execute("""
         SELECT id, question, proposition1, proposition2, proposition3, proposition4, reponse_correcte, points 
         FROM Questions 
         WHERE theme=? 
-        ORDER BY RANDOM() 
+        ORDER BY points DESC
         LIMIT 5
     """, (theme,))
     questions = cursor.fetchall()
     conn.close()
-    # Formater les questions comme avant
-    quiz_data = [
-        {
-            "id": q[0],
-            "question": q[1],
-            "propositions": [q[2], q[3], q[4], q[5]],
-            "points": q[7]
-        }
-        for q in questions
-    ]
+
+    quiz_data = []
+    for question in questions:
+        quiz_data.append({
+            "id": question[0],
+            "question": question[1],
+            "propositions": [question[2], question[3], question[4], question[5]],
+            "points": question[7]
+        })
     return jsonify({"quiz": quiz_data})
 
 
@@ -50,11 +55,14 @@ def check_answer():
     correct_answer = cursor.fetchone()
     conn.close()
 
-    if correct_answer and user_answer.lower() == correct_answer[0].lower():
+    # Comparaison insensible à la casse
+    if correct_answer and user_answer.strip().lower() == correct_answer[0].strip().lower():
         return jsonify({"result": "correct"})
     else:
         return jsonify({"result": "incorrect", "correct_answer": correct_answer[0]})
 
+
+# Route pour sauvegarder le score
 @app.route('/save_score', methods=['POST'])
 def save_score():
     data = request.get_json()
@@ -75,6 +83,8 @@ def save_score():
 
     return jsonify({"message": "Score enregistré avec succès"})
 
+
+# Route pour récupérer les scores (affichage par catégorie)
 @app.route('/get_scores', methods=['GET'])
 def get_scores():
     conn = sqlite3.connect("quiz_game.db")
