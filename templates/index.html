@@ -25,51 +25,29 @@
             padding: 20px;
         }
 
-        .button {
+        .theme-card {
             background-color: #ffd700;
             color: #2b134b;
-            border: none;
-            padding: 15px 30px;
-            margin: 20px 0;
-            font-size: 16px;
+            border: 2px solid #9e7c2b;
+            border-radius: 10px;
+            box-shadow: 0px 6px 0px #9e7c2b;
+            padding: 20px;
+            margin: 15px;
             cursor: pointer;
-            text-transform: uppercase;
-            box-shadow: 0px 4px 0px #9e7c2b;
-            font-family: 'Press Start 2P', cursive;
+            text-align: center;
+            font-size: 18px;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
 
-        .button:hover {
-            background-color: #f0c800;
+        .theme-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 10px 0px #9e7c2b;
         }
 
-        select {
-            background-color: #ffd700;
-            color: #2b134b;
-            border: none;
-            padding: 10px;
-            font-size: 16px;
-            box-shadow: 0px 4px 0px #9e7c2b;
-        }
-
-        .btn-outline-primary {
-            border-color: #ffd700;
-            color: #ffd700;
-            font-family: 'Press Start 2P', cursive;
-        }
-
-        .btn-outline-primary:hover {
-            background-color: #ffd700;
-            color: #2b134b;
-        }
-
-        .table {
-            background-color: #2b134b;
-            color: #ffd700;
-            border-color: #ffd700;
-        }
-
-        .table th, .table td {
-            border-color: #9e7c2b;
+        #theme-selection {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .hidden {
@@ -82,12 +60,34 @@
             color: #f0c800;
         }
 
-        #theme-selection, #nom-classement, #quiz-container, #result-section, #score-section {
+        #quiz-container, #nom-classement, #result-section, #score-section {
             border: 2px solid #ffd700;
             border-radius: 15px;
             padding: 20px;
             margin: 20px 0;
             box-shadow: 0px 6px 0px #9e7c2b;
+        }
+
+        .table {
+            background-color: #2b134b;
+            color: #ffffff;
+            border-color: #ffd700;
+        }
+
+        .table th {
+            background-color: #9e7c2b;
+            color: #ffffff;
+            border-color: #ffd700;
+        }
+
+        .table td {
+            background-color: #3a176b;
+            color: #ffffff;
+            border-color: #ffd700;
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: #47297a;
         }
     </style>
 </head>
@@ -97,14 +97,10 @@
 
         <!-- Choix du thème -->
         <div id="theme-selection">
-            <h3 class="mb-3">Choisissez un thème</h3>
-            <select id="theme-select" class="form-control w-50 mx-auto">
-                <option value="Sciences">Sciences</option>
-                <option value="Art et Littérature">Art et Littérature</option>
-                <option value="Géographie">Géographie</option>
-                <option value="Aléatoire">Quizz Aléatoire</option>
-            </select>
-            <button class="button mt-3" onclick="startQuiz()">Commencer le Quiz</button>
+            <div class="theme-card" onclick="startQuiz('Sciences')">Sciences</div>
+            <div class="theme-card" onclick="startQuiz('Art et Littérature')">Art et Littérature</div>
+            <div class="theme-card" onclick="startQuiz('Géographie')">Géographie</div>
+            <div class="theme-card" onclick="startQuiz('Aléatoire')">Thème Aléatoire</div>
         </div>
 
         <!-- Formulaire de classement -->
@@ -151,8 +147,8 @@
         let score = 0;
         let timer;
 
-        async function startQuiz() {
-            const response = await fetch('/start_quiz');
+        async function startQuiz(theme) {
+            const response = await fetch(`/start_quiz?theme=${theme}`);
             const data = await response.json();
             quizData = data.quiz;
 
@@ -164,7 +160,7 @@
                 document.getElementById('quiz-container').classList.remove('hidden');
                 displayQuestion();
             } else {
-                alert("Aucune question disponible.");
+                alert("Aucune question disponible pour ce thème.");
             }
         }
 
