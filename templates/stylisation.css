@@ -1,0 +1,63 @@
+/* Style général du corps */
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(120deg, #6a11cb, #2575fc);
+    color: #fff;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Animation 3D pour l'arrière-plan */
+body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, #2575fc, #6a11cb);
+    animation: backgroundAnimation 10s infinite alternate-reverse;
+    z-index: -1;
+}
+
+@keyframes backgroundAnimation {
+    0% {
+        transform: translate(-25%, -25%) scale(1);
+    }
+    100% {
+        transform: translate(0, 0) scale(1.5);
+    }
+}
+
+/* En-tête */
+h1 {
+    font-weight: bold;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Boutons */
+button {
+    transition: all 0.3s ease-in-out;
+    font-size: 1.2em;
+}
+
+button:hover {
+    transform: scale(1.1);
+}
+
+.btn-primary {
+    background-color: #2575fc;
+    border: none;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border: none;
+}
+
+/* Tableau des scores */
+#score-table {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #333;
+}
