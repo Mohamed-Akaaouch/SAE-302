@@ -165,37 +165,58 @@
         }
 
         function displayQuestion() {
+    clearInterval(timer); 
+    const questionData = quizData[currentQuestionIndex];
+
+    document.getElementById('question').innerText = questionData.question;
+
+    const optionsDiv = document.getElementById('options');
+    optionsDiv.innerHTML = ""; // Réinitialiser les options
+
+    if (questionData.propositions.every(option => option === null)) {
+        // Si la question n'a pas de propositions
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'user-answer';
+        input.placeholder = 'Écrivez votre réponse ici...';
+        input.className = 'form-control my-3';
+        optionsDiv.appendChild(input);
+
+        const validateButton = document.createElement('button');
+        validateButton.innerText = 'Valider';
+        validateButton.className = 'btn btn-success';
+        validateButton.onclick = () => {
+            const userAnswer = document.getElementById('user-answer').value.trim();
+            checkAnswer(questionData.id, userAnswer, questionData.points);
+        };
+        optionsDiv.appendChild(validateButton);
+    } else {
+        // Si la question a des propositions
+        questionData.propositions.forEach(option => {
+            if (option) {
+                const button = document.createElement('button');
+                button.innerText = option;
+                button.className = "btn btn-outline-primary btn-block my-2";
+                button.onclick = () => checkAnswer(questionData.id, option, questionData.points);
+                optionsDiv.appendChild(button);
+            }
+        });
+    }
+
+    let timeLeft = 15;
+    const timerDiv = document.getElementById('timer');
+    timerDiv.innerText = `Temps restant : ${timeLeft}s`;
+
+    timer = setInterval(() => {
+        timeLeft--;
+        timerDiv.innerText = `Temps restant : ${timeLeft}s`;
+
+        if (timeLeft <= 0) {
             clearInterval(timer);
-            const questionData = quizData[currentQuestionIndex];
-            document.getElementById('question').innerText = questionData.question;
-
-            const optionsDiv = document.getElementById('options');
-            optionsDiv.innerHTML = "";
-
-            questionData.propositions.forEach(option => {
-                if (option) {
-                    const button = document.createElement('button');
-                    button.innerText = option;
-                    button.className = "btn btn-outline-primary btn-block my-2";
-                    button.onclick = () => checkAnswer(questionData.id, option, questionData.points);
-                    optionsDiv.appendChild(button);
-                }
-            });
-
-            let timeLeft = 15;
-            const timerDiv = document.getElementById('timer');
-            timerDiv.innerText = `Temps restant : ${timeLeft}s`;
-
-            timer = setInterval(() => {
-                timeLeft--;
-                timerDiv.innerText = `Temps restant : ${timeLeft}s`;
-
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    nextQuestion();
-                }
-            }, 1000);
+            nextQuestion();
         }
+    }, 1000);
+}
 
 
         async function checkAnswer(questionId, userAnswer, points) {
