@@ -173,6 +173,13 @@
     const optionsDiv = document.getElementById('options');
     optionsDiv.innerHTML = ""; // Réinitialiser les options
 
+    const skipButton = document.createElement('button');
+    skipButton.innerText = 'Passer';
+    skipButton.className = 'btn btn-warning my-2';
+    skipButton.onclick = nextQuestion;
+    optionsDiv.appendChild(skipButton);
+
+
     if (questionData.propositions.every(option => option === null)) {
         // Si la question n'a pas de propositions
         const input = document.createElement('input');
