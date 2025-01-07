@@ -146,16 +146,18 @@
         let quizData = [];
         let score = 0;
         let timer;
-
+        let startTime; // Nouveau : Timestamp pour mesurer le temps total du quiz
+    
         async function startQuiz(theme) {
             const response = await fetch(`/start_quiz?theme=${theme}`);
             const data = await response.json();
             quizData = data.quiz;
-
+            startTime = data.start_time; // Nouveau : Stocker le timestamp de début
+    
             if (quizData.length > 0) {
                 currentQuestionIndex = 0;
                 score = 0;
-
+    
                 document.getElementById('theme-selection').classList.add('hidden');
                 document.getElementById('quiz-container').classList.remove('hidden');
                 displayQuestion();
@@ -163,78 +165,76 @@
                 alert("Aucune question disponible pour ce thème.");
             }
         }
-
+    
         function displayQuestion() {
-    clearInterval(timer); 
-    const questionData = quizData[currentQuestionIndex];
-
-    document.getElementById('question').innerText = questionData.question;
-
-    const optionsDiv = document.getElementById('options');
-    optionsDiv.innerHTML = ""; // Réinitialiser les options
-
-    const skipButton = document.createElement('button');
-    skipButton.innerText = 'Passer';
-    skipButton.className = 'btn btn-warning my-2';
-    skipButton.onclick = nextQuestion;
-    optionsDiv.appendChild(skipButton);
-
-
-    if (questionData.propositions.every(option => option === null)) {
-        // Si la question n'a pas de propositions
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.id = 'user-answer';
-        input.placeholder = 'Écrivez votre réponse ici...';
-        input.className = 'form-control my-3';
-        optionsDiv.appendChild(input);
-
-        const validateButton = document.createElement('button');
-        validateButton.innerText = 'Valider';
-        validateButton.className = 'btn btn-success';
-        validateButton.onclick = () => {
-            const userAnswer = document.getElementById('user-answer').value.trim();
-            checkAnswer(questionData.id, userAnswer, questionData.points);
-        };
-        optionsDiv.appendChild(validateButton);
-    } else {
-        // Si la question a des propositions
-        questionData.propositions.forEach(option => {
-            if (option) {
-                const button = document.createElement('button');
-                button.innerText = option;
-                button.className = "btn btn-outline-primary btn-block my-2";
-                button.onclick = () => checkAnswer(questionData.id, option, questionData.points);
-                optionsDiv.appendChild(button);
-            }
-        });
-    }
-
-    let timeLeft = 15;
-    const timerDiv = document.getElementById('timer');
-    timerDiv.innerText = `Temps restant : ${timeLeft}s`;
-
-    timer = setInterval(() => {
-        timeLeft--;
-        timerDiv.innerText = `Temps restant : ${timeLeft}s`;
-
-        if (timeLeft <= 0) {
             clearInterval(timer);
-            nextQuestion();
+            const questionData = quizData[currentQuestionIndex];
+    
+            document.getElementById('question').innerText = questionData.question;
+    
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = ""; // Réinitialiser les options
+    
+            const skipButton = document.createElement('button');
+            skipButton.innerText = 'Passer';
+            skipButton.className = 'btn btn-warning my-2';
+            skipButton.onclick = nextQuestion;
+            optionsDiv.appendChild(skipButton);
+    
+            if (questionData.propositions.every(option => option === null)) {
+                // Si la question n'a pas de propositions
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = 'user-answer';
+                input.placeholder = 'Écrivez votre réponse ici...';
+                input.className = 'form-control my-3';
+                optionsDiv.appendChild(input);
+    
+                const validateButton = document.createElement('button');
+                validateButton.innerText = 'Valider';
+                validateButton.className = 'btn btn-success';
+                validateButton.onclick = () => {
+                    const userAnswer = document.getElementById('user-answer').value.trim();
+                    checkAnswer(questionData.id, userAnswer, questionData.points);
+                };
+                optionsDiv.appendChild(validateButton);
+            } else {
+                // Si la question a des propositions
+                questionData.propositions.forEach(option => {
+                    if (option) {
+                        const button = document.createElement('button');
+                        button.innerText = option;
+                        button.className = "btn btn-outline-primary btn-block my-2";
+                        button.onclick = () => checkAnswer(questionData.id, option, questionData.points);
+                        optionsDiv.appendChild(button);
+                    }
+                });
+            }
+    
+            let timeLeft = 15;
+            const timerDiv = document.getElementById('timer');
+            timerDiv.innerText = `Temps restant : ${timeLeft}s`;
+    
+            timer = setInterval(() => {
+                timeLeft--;
+                timerDiv.innerText = `Temps restant : ${timeLeft}s`;
+    
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    nextQuestion();
+                }
+            }, 1000);
         }
-    }, 1000);
-}
-
-
+    
         async function checkAnswer(questionId, userAnswer, points) {
             clearInterval(timer);
-
+    
             const response = await fetch('/check_answer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: questionId, answer: userAnswer })
             });
-
+    
             const result = await response.json();
             if (result.result === "correct") {
                 score += points;
@@ -242,10 +242,10 @@
             } else {
                 alert(`Mauvaise réponse. La bonne réponse était : ${result.correct_answer}`);
             }
-
+    
             nextQuestion();
         }
-
+    
         function nextQuestion() {
             currentQuestionIndex++;
             if (currentQuestionIndex < quizData.length) {
@@ -254,23 +254,23 @@
                 endQuiz();
             }
         }
-
+    
         function endQuiz() {
             document.getElementById('quiz-container').classList.add('hidden');
             document.getElementById('result-section').classList.remove('hidden');
             document.getElementById('result').innerText = `Votre score final est : ${score}`;
-
+    
             document.getElementById('nom-classement').classList.remove('hidden');
         }
-
+    
         async function submitNameAndShowScores() {
             const nom = document.getElementById('nom').value.trim();
-
+    
             if (nom === "") {
                 alert("Veuillez entrer un nom.");
                 return;
             }
-
+    
             try {
                 const response = await fetch('/save_score', {
                     method: 'POST',
@@ -278,13 +278,14 @@
                     body: JSON.stringify({
                         nom_joueur: nom,
                         theme: "Aléatoire",
-                        score: score
+                        score: score,
+                        start_time: startTime // Nouveau : Ajouter le temps de début
                     })
                 });
-
+    
                 const result = await response.json();
                 if (result.message === "Score enregistré avec succès") {
-                    alert("Votre score a été enregistré !");
+                    alert(`Votre score a été enregistré ! Temps total : ${result.total_time}s`);
                     fetchScores();
                     document.getElementById('nom-classement').classList.add('hidden');
                 } else {
@@ -295,48 +296,49 @@
                 alert("Erreur lors de l'enregistrement du score. Veuillez réessayer.");
             }
         }
-
+    
         async function fetchScores() {
             try {
                 const response = await fetch('/get_scores');
                 const data = await response.json();
-
+    
                 const scoreBody = document.getElementById('score-body');
                 scoreBody.innerHTML = '';
-
+    
                 data.scores.forEach(score => {
                     const row = `
                         <tr>
                             <td>${score[0]}</td>
                             <td>${score[1]}</td>
                             <td>${score[2]}</td>
-                            <td>${score[3]}</td>
+                            <td>${score[3]}s</td>
                         </tr>
                     `;
                     scoreBody.innerHTML += row;
                 });
-
+    
                 document.getElementById('score-section').classList.remove('hidden');
             } catch (error) {
                 console.error("Erreur lors du chargement des scores :", error);
                 alert("Une erreur s'est produite lors du chargement des scores.");
             }
         }
-
+    
         function restartQuiz() {
             currentQuestionIndex = 0;
             score = 0;
             quizData = [];
-
+    
             document.getElementById('result-section').classList.add('hidden');
             document.getElementById('score-section').classList.add('hidden');
             document.getElementById('nom-classement').classList.add('hidden');
-
+    
             document.getElementById('theme-selection').classList.remove('hidden');
         }
-
+    
         document.getElementById('restart-btn').addEventListener('click', restartQuiz);
         document.getElementById('submit-nom').addEventListener('click', submitNameAndShowScores);
     </script>
+    
 </body>
 </html>

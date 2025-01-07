@@ -6,33 +6,33 @@ cursor = conn.cursor()
 
 # Création de la table Questions
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS Questions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    theme TEXT NOT NULL,
-    type TEXT NOT NULL,
-    question TEXT NOT NULL,
-    reponse_correcte TEXT NOT NULL,
-    proposition1 TEXT,
-    proposition2 TEXT,
-    proposition3 TEXT,
-    proposition4 TEXT,
-    points INTEGER NOT NULL
-)
+    CREATE TABLE IF NOT EXISTS Questions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        theme TEXT NOT NULL,
+        type TEXT NOT NULL,
+        question TEXT NOT NULL,
+        reponse_correcte TEXT NOT NULL,
+        proposition1 TEXT,
+        proposition2 TEXT,
+        proposition3 TEXT,
+        proposition4 TEXT,
+        points INTEGER NOT NULL
+    )
 """)
 
 # Création de la table Scores
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS Scores (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nom_joueur TEXT NOT NULL,
-    theme TEXT NOT NULL,
-    score INTEGER NOT NULL,
-    date TEXT NOT NULL
-)
+    CREATE TABLE IF NOT EXISTS Scores (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nom_joueur TEXT NOT NULL,
+        theme TEXT NOT NULL,
+        score INTEGER NOT NULL,
+        temps_total REAL NOT NULL,
+        date TEXT NOT NULL
+    )
 """)
 
 # Fermeture de la connexion
 conn.commit()
 conn.close()
-
-print("Base de données créée avec succès.")
+print("Base de données mise à jour avec succès.")
