@@ -32,7 +32,7 @@ cursor.execute("""
     )
 """)
 
-# Fermeture de la connexion
+#Fermeture de la connexion
 conn.commit()
 conn.close()
 print("Base de données mise à jour avec succès.")

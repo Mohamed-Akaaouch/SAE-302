@@ -6,7 +6,7 @@ import time
 
 app = Flask(__name__)
 
-# Route pour la page d'accueil
+#Route pour la page d'accueil
 @app.route('/')
 def home():
     return render_template('index.html')
