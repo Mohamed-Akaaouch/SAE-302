@@ -93,11 +93,13 @@ def get_scores():
     cursor.execute("""
         SELECT nom_joueur, theme, score, temps_total, date
         FROM Scores
-        ORDER BY score DESC, temps_total ASC, date ASC
+        ORDER BY CASE WHEN theme = 'Aléatoire' THEN 0 ELSE 1 END, score DESC, date DESC
     """)
     scores = cursor.fetchall()
     conn.close()
+    
     return jsonify({"scores": scores})
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

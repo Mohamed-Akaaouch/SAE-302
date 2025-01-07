@@ -123,22 +123,26 @@
             <p id="result">Votre score final est : 0</p>
         </div>
 
-        <!-- Tableau des scores avec le bouton "Recommencer" -->
-        <div id="score-section" class="hidden">
-            <h2>Classement des Scores</h2>
-            <table id="score-table" class="table table-bordered table-striped mt-3">
-                <thead>
-                    <tr>
-                        <th>Nom du Joueur</th>
-                        <th>Thème</th>
-                        <th>Score</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody id="score-body"></tbody>
-            </table>
-            <button id="restart-btn" class="button mt-3">Recommencer</button>
-        </div>
+        <!-- Tableau des scores -->
+<div id="score-section" class="hidden">
+    <h2>Classement des Scores</h2>
+    <table id="score-table" class="table table-bordered table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Nom du Joueur</th>
+                <th>Thème</th>
+                <th>Score</th>
+                <th>Date</th>
+                <th>Temps Total</th>
+            </tr>
+        </thead>
+        <tbody id="score-body">
+            <!-- Les lignes seront ajoutées ici par JavaScript -->
+        </tbody>
+    </table>
+    <button id="restart-btn" class="button mt-3">Recommencer</button>
+</div>
+
     </div>
 
     <script>
@@ -298,31 +302,35 @@
         }
     
         async function fetchScores() {
-            try {
-                const response = await fetch('/get_scores');
-                const data = await response.json();
-    
-                const scoreBody = document.getElementById('score-body');
-                scoreBody.innerHTML = '';
-    
-                data.scores.forEach(score => {
-                    const row = `
-                        <tr>
-                            <td>${score[0]}</td>
-                            <td>${score[1]}</td>
-                            <td>${score[2]}</td>
-                            <td>${score[3]}s</td>
-                        </tr>
-                    `;
-                    scoreBody.innerHTML += row;
-                });
-    
-                document.getElementById('score-section').classList.remove('hidden');
-            } catch (error) {
-                console.error("Erreur lors du chargement des scores :", error);
-                alert("Une erreur s'est produite lors du chargement des scores.");
-            }
-        }
+    try {
+        const response = await fetch('/get_scores');
+        const data = await response.json();
+
+        const scoreBody = document.getElementById('score-body');
+        scoreBody.innerHTML = '';
+
+        // Itérer sur les scores et ajouter chaque ligne au tableau
+        data.scores.forEach(score => {
+            const row = `
+                <tr>
+                    <td>${score[0]}</td> <!-- Nom du joueur -->
+                    <td>${score[1]}</td> <!-- Thème -->
+                    <td>${score[2]}</td> <!-- Score -->
+                    <td>${score[4]}</td> <!-- Date -->
+                    <td>${score[3]}s</td> <!-- Temps Total -->
+                </tr>
+            `;
+            scoreBody.innerHTML += row;
+        });
+
+        // Afficher la section des scores
+        document.getElementById('score-section').classList.remove('hidden');
+    } catch (error) {
+        console.error("Erreur lors du chargement des scores :", error);
+        alert("Une erreur s'est produite lors du chargement des scores.");
+    }
+}
+
     
         function restartQuiz() {
             currentQuestionIndex = 0;
