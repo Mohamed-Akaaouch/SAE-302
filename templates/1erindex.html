@@ -97,18 +97,18 @@
         <div class="d-flex justify-content-end">
             <a href="{{ url_for('logout') }}" class="btn btn-danger my-3">Déconnexion</a>
         </div>
-
+    <div class="container">
         <h1 class="my-4">Quiz Culture Générale</h1>
 
-        <!-- Choix du thème et voir classement -->
+        <!-- Choix du thème -->
         <div id="theme-selection">
             <div class="theme-card" onclick="startQuiz('Sciences')">Sciences</div>
             <div class="theme-card" onclick="startQuiz('Art et Littérature')">Art et Littérature</div>
             <div class="theme-card" onclick="startQuiz('Géographie')">Géographie</div>
             <div class="theme-card" onclick="startQuiz('Aléatoire')">Thème Aléatoire</div>
-            <!-- Nouveau bouton pour voir les scores -->
-            <div class="theme-card" onclick="showScores()">Voir le classement</div>
         </div>
+
+        
 
         <!-- Conteneur du Quiz -->
         <div id="quiz-container" class="hidden">
@@ -124,10 +124,9 @@
         </div>
 
         <!-- Tableau des scores -->
-      <!-- Tableau des scores -->
 <div id="score-section" class="hidden">
     <h2>Classement des Scores</h2>
-    <table class="table table-bordered table-striped mt-3">
+    <table id="score-table" class="table table-bordered table-striped mt-3">
         <thead>
             <tr>
                 <th>Nom du Joueur</th>
@@ -138,32 +137,170 @@
             </tr>
         </thead>
         <tbody id="score-body">
-            <!-- Les scores seront ajoutés ici par JavaScript -->
+            <!-- Les lignes seront ajoutées ici par JavaScript -->
         </tbody>
     </table>
-    <button id="restart-btn" class="button mt-3">Fermer</button>
+    <button id="restart-btn" class="button mt-3">Recommencer</button>
 </div>
-
-
 
     </div>
 
     <script>
-        let selectedTheme = ""; // Variable pour stocker le thème sélectionné
         let currentQuestionIndex = 0;
         let quizData = [];
         let score = 0;
         let timer;
         let startTime; // Nouveau : Timestamp pour mesurer le temps total du quiz
+    
+        async function startQuiz(theme) {
+            const response = await fetch(`/start_quiz?theme=${theme}`);
+            const data = await response.json();
+            quizData = data.quiz;
+            startTime = data.start_time; // Nouveau : Stocker le timestamp de début
+    
+            if (quizData.length > 0) {
+                currentQuestionIndex = 0;
+                score = 0;
+    
+                document.getElementById('theme-selection').classList.add('hidden');
+                document.getElementById('quiz-container').classList.remove('hidden');
+                displayQuestion();
+            } else {
+                alert("Aucune question disponible pour ce thème.");
+            }
+        }
+    
+        function displayQuestion() {
+            clearInterval(timer);
+            const questionData = quizData[currentQuestionIndex];
+    
+            document.getElementById('question').innerText = questionData.question;
+    
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = ""; // Réinitialiser les options
+    
+            const skipButton = document.createElement('button');
+            skipButton.innerText = 'Passer';
+            skipButton.className = 'btn btn-warning my-2';
+            skipButton.onclick = nextQuestion;
+            optionsDiv.appendChild(skipButton);
+    
+            if (questionData.propositions.every(option => option === null)) {
+                // Si la question n'a pas de propositions
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = 'user-answer';
+                input.placeholder = 'Écrivez votre réponse ici...';
+                input.className = 'form-control my-3';
+                optionsDiv.appendChild(input);
+    
+                const validateButton = document.createElement('button');
+                validateButton.innerText = 'Valider';
+                validateButton.className = 'btn btn-success';
+                validateButton.onclick = () => {
+                    const userAnswer = document.getElementById('user-answer').value.trim();
+                    checkAnswer(questionData.id, userAnswer, questionData.points);
+                };
+                optionsDiv.appendChild(validateButton);
+            } else {
+                // Si la question a des propositions
+                questionData.propositions.forEach(option => {
+                    if (option) {
+                        const button = document.createElement('button');
+                        button.innerText = option;
+                        button.className = "btn btn-outline-primary btn-block my-2";
+                        button.onclick = () => checkAnswer(questionData.id, option, questionData.points);
+                        optionsDiv.appendChild(button);
+                    }
+                });
+            }
+    
+            let timeLeft = 15;
+            const timerDiv = document.getElementById('timer');
+            timerDiv.innerText = `Temps restant : ${timeLeft}s`;
+    
+            timer = setInterval(() => {
+                timeLeft--;
+                timerDiv.innerText = `Temps restant : ${timeLeft}s`;
+    
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+    
+        async function checkAnswer(questionId, userAnswer, points) {
+            clearInterval(timer);
+    
+            const response = await fetch('/check_answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: questionId, answer: userAnswer })
+            });
+    
+            const result = await response.json();
+            if (result.result === "correct") {
+                score += points;
+                alert("Bonne réponse !");
+            } else {
+                alert(`Mauvaise réponse. La bonne réponse était : ${result.correct_answer}`);
+            }
+    
+            nextQuestion();
+        }
+    
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                displayQuestion();
+            } else {
+                endQuiz();
+            }
+        }
+    
+        function endQuiz() {
+    document.getElementById('quiz-container').classList.add('hidden');
+    document.getElementById('result-section').classList.remove('hidden');
+    document.getElementById('result').innerText = `Votre score final est : ${score}`;
 
-        // Afficher les scores sans faire le quiz
-        async function showScores() {
+    submitScore(); // Enregistrer le score directement
+}
+
+    
+        async function submitScore() {
+    try {
+        const response = await fetch('/save_score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                theme: "Aléatoire", // Vous pouvez remplacer par la variable thème réelle
+                score: score,
+                start_time: startTime // Ajouter le timestamp de début
+            })
+        });
+
+        const result = await response.json();
+        if (result.message === "Score enregistré avec succès") {
+            alert(`Votre score a été enregistré ! Temps total : ${result.total_time}s`);
+            fetchScores(); // Charger le tableau des scores
+        } else {
+            alert("Erreur lors de l'enregistrement du score.");
+        }
+    } catch (error) {
+        console.error("Erreur lors de l'envoi du score :", error);
+        alert("Erreur lors de l'enregistrement du score. Veuillez réessayer.");
+    }
+}
+
+    
+        async function fetchScores() {
     try {
         const response = await fetch('/get_scores');
         const data = await response.json();
 
         const scoreBody = document.getElementById('score-body');
-        scoreBody.innerHTML = ''; // Réinitialiser le tableau
+        scoreBody.innerHTML = '';
 
         // Itérer sur les scores et ajouter chaque ligne au tableau
         data.scores.forEach(score => {
@@ -187,194 +324,19 @@
     }
 }
 
-
-async function startQuiz(theme) {
-    selectedTheme = theme;  // Stocke le thème sélectionné
-
-    const response = await fetch(`/start_quiz?theme=${theme}`);
-    const data = await response.json();
-    quizData = data.quiz;
-    startTime = data.start_time; // Nouveau : Stocker le timestamp de début
-
-    if (quizData.length > 0) {
-        currentQuestionIndex = 0;
-        score = 0;
-
-        document.getElementById('theme-selection').classList.add('hidden');
-        document.getElementById('quiz-container').classList.remove('hidden');
-        displayQuestion();
-    } else {
-        alert("Aucune question disponible pour ce thème.");
-    }
-}
-
-
-        function displayQuestion() {
-            clearInterval(timer);
-            const questionData = quizData[currentQuestionIndex];
-
-            document.getElementById('question').innerText = questionData.question;
-
-            const optionsDiv = document.getElementById('options');
-            optionsDiv.innerHTML = ""; // Réinitialiser les options
-
-            const skipButton = document.createElement('button');
-            skipButton.innerText = 'Passer';
-            skipButton.className = 'btn btn-warning my-2';
-            skipButton.onclick = nextQuestion;
-            optionsDiv.appendChild(skipButton);
-
-            if (questionData.propositions.every(option => option === null)) {
-                // Si la question n'a pas de propositions
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.id = 'user-answer';
-                input.placeholder = 'Écrivez votre réponse ici...';
-                input.className = 'form-control my-3';
-                optionsDiv.appendChild(input);
-
-                const validateButton = document.createElement('button');
-                validateButton.innerText = 'Valider';
-                validateButton.className = 'btn btn-success';
-                validateButton.onclick = () => {
-                    const userAnswer = document.getElementById('user-answer').value.trim();
-                    checkAnswer(questionData.id, userAnswer, questionData.points);
-                };
-                optionsDiv.appendChild(validateButton);
-            } else {
-                // Si la question a des propositions
-                questionData.propositions.forEach(option => {
-                    if (option) {
-                        const button = document.createElement('button');
-                        button.innerText = option;
-                        button.className = "btn btn-outline-primary btn-block my-2";
-                        button.onclick = () => checkAnswer(questionData.id, option, questionData.points);
-                        optionsDiv.appendChild(button);
-                    }
-                });
-            }
-
-            let timeLeft = 15;
-            const timerDiv = document.getElementById('timer');
-            timerDiv.innerText = `Temps restant : ${timeLeft}s`;
-
-            timer = setInterval(() => {
-                timeLeft--;
-                timerDiv.innerText = `Temps restant : ${timeLeft}s`;
-
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    nextQuestion();
-                }
-            }, 1000);
-        }
-
-        async function checkAnswer(questionId, userAnswer, points) {
-            clearInterval(timer);
-
-            const response = await fetch('/check_answer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: questionId, answer: userAnswer })
-            });
-
-            const result = await response.json();
-            if (result.result === "correct") {
-                score += points;
-                alert("Bonne réponse !");
-            } else {
-                alert(`Mauvaise réponse. La bonne réponse était : ${result.correct_answer}`);
-            }
-
-            nextQuestion();
-        }
-
-        function nextQuestion() {
-            currentQuestionIndex++;
-            if (currentQuestionIndex < quizData.length) {
-                displayQuestion();
-            } else {
-                endQuiz();
-            }
-        }
-
-        function endQuiz() {
-            document.getElementById('quiz-container').classList.add('hidden');
-            document.getElementById('result-section').classList.remove('hidden');
-            document.getElementById('result').innerText = `Votre score final est : ${score}`;
-
-            submitScore(); // Enregistrer le score directement
-        }
-
-        async function submitScore() {
-    try {
-        const response = await fetch('/save_score', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                theme: selectedTheme, // Utilisez le thème sélectionné
-                score: score,
-                start_time: startTime // Ajouter le timestamp de début
-            })
-        });
-
-        const result = await response.json();
-        if (result.message === "Score enregistré avec succès") {
-            alert(`Votre score a été enregistré ! Temps total : ${result.total_time}s`);
-            fetchScores(); // Charger le tableau des scores
-        } else {
-            alert("Erreur lors de l'enregistrement du score.");
-        }
-    } catch (error) {
-        console.error("Erreur lors de l'envoi du score :", error);
-        alert("Erreur lors de l'enregistrement du score. Veuillez réessayer.");
-    }
-}
-
-
-
-        async function fetchScores() {
-            try {
-                const response = await fetch('/get_scores');
-                const data = await response.json();
-
-                const scoreBody = document.getElementById('score-body');
-                scoreBody.innerHTML = '';
-
-                // Itérer sur les scores et ajouter chaque ligne au tableau
-                data.scores.forEach(score => {
-                    const row = `
-                        <tr>
-                            <td>${score[0]}</td> <!-- Nom du joueur -->
-                            <td>${score[1]}</td> <!-- Thème -->
-                            <td>${score[2]}</td> <!-- Score -->
-                            <td>${score[4]}</td> <!-- Date -->
-                            <td>${score[3]}s</td> <!-- Temps Total -->
-                        </tr>
-                    `;
-                    scoreBody.innerHTML += row;
-                });
-
-                // Afficher la section des scores
-                document.getElementById('score-section').classList.remove('hidden');
-            } catch (error) {
-                console.error("Erreur lors du chargement des scores :", error);
-                alert("Une erreur s'est produite lors du chargement des scores.");
-            }
-        }
-
+    
         function restartQuiz() {
             currentQuestionIndex = 0;
             score = 0;
             quizData = [];
-
+    
             document.getElementById('result-section').classList.add('hidden');
             document.getElementById('score-section').classList.add('hidden');
             document.getElementById('nom-classement').classList.add('hidden');
-
+    
             document.getElementById('theme-selection').classList.remove('hidden');
         }
-
+    
         document.getElementById('restart-btn').addEventListener('click', restartQuiz);
         document.getElementById('submit-nom').addEventListener('click', submitNameAndShowScores);
     </script>    

@@ -4,6 +4,15 @@ import sqlite3
 conn = sqlite3.connect("quiz_game.db")
 cursor = conn.cursor()
 
+# Création de la table Users
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS Users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL
+    )
+""")
+
 # Création de la table Questions
 cursor.execute("""
     CREATE TABLE IF NOT EXISTS Questions (
@@ -24,15 +33,16 @@ cursor.execute("""
 cursor.execute("""
     CREATE TABLE IF NOT EXISTS Scores (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nom_joueur TEXT NOT NULL,
+        user_id INTEGER NOT NULL,
         theme TEXT NOT NULL,
         score INTEGER NOT NULL,
         temps_total REAL NOT NULL,
-        date TEXT NOT NULL
+        date TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES Users (id)
     )
 """)
 
-#Fermeture de la connexion
+# Fermeture de la connexion
 conn.commit()
 conn.close()
 print("Base de données mise à jour avec succès.")
